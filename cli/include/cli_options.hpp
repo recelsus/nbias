@@ -1,5 +1,7 @@
 #pragma once
 
+#include <nbias/core/vault.hpp>
+
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -11,6 +13,7 @@ enum class command_kind
     enc,
     dec,
     edit,
+    info,
 };
 
 struct common_key_options
@@ -24,6 +27,7 @@ struct enc_options : common_key_options
 {
     std::vector<std::filesystem::path> paths{};
     std::optional<std::filesystem::path> output_dir{};
+    nbias::core::kdf_profile profile{nbias::core::kdf_profile::fast};
 };
 
 struct dec_options : common_key_options
@@ -42,7 +46,12 @@ struct edit_options : common_key_options
     bool assume_yes{false};
 };
 
-using command_payload = std::variant<enc_options, dec_options, edit_options>;
+struct info_options
+{
+    std::filesystem::path target_path{};
+};
+
+using command_payload = std::variant<enc_options, dec_options, edit_options, info_options>;
 
 struct parsed_command
 {

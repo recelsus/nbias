@@ -29,12 +29,25 @@ namespace
             std::filesystem::create_directories(dir);
         }
         std::ofstream stream(path, std::ios::binary | std::ios::trunc);
+        if(!stream) {
+            throw std::runtime_error("failed to open for writing: " + path.string());
+        }
         stream.write(reinterpret_cast<char const*>(content.data()), static_cast<std::streamsize>(content.size()));
+        if(!stream) {
+            throw std::runtime_error("failed to write: " + path.string());
+        }
     }
 
     bool is_already_encrypted(std::filesystem::path const& path)
     {
         return path.extension().string() == vault_extension;
+    }
+
+    bool confirm_enc_overwrite(std::filesystem::path const& path)
+    {
+        std::cout << path.string() << " already exists. Overwrite? [y/N] ";
+        std::cout.flush();
+        return read_yes_no_answer();
     }
 
     bool wants_password(enc_options const& options)
@@ -64,8 +77,18 @@ namespace
             std::cerr << "nbias enc: no such file: " << input_path.string() << '\n';
             return 1;
         }
+        if(std::filesystem::is_directory(input_path)) {
+            std::cerr << "nbias enc: is a directory, skipping: " << input_path.string() << '\n';
+            return 1;
+        }
         if(is_already_encrypted(input_path)) {
             std::cerr << "nbias enc: already encrypted, skipping: " << input_path.string() << '\n';
+            return 1;
+        }
+
+        auto output_path = make_vault_output_path(input_path, options.output_dir, env.output_dir, std::filesystem::current_path());
+        if(std::filesystem::exists(output_path) && !confirm_enc_overwrite(output_path)) {
+            std::cerr << "nbias enc: declined to overwrite, skipping: " << output_path.string() << '\n';
             return 1;
         }
 
@@ -76,10 +99,9 @@ namespace
             plaintext,
             input_path.filename().string(),
             auth,
-            nbias::core::kdf_profile::fast,
+            options.profile,
             as_view(passphrase));
 
-        auto output_path = make_vault_output_path(input_path, options.output_dir, env.output_dir, std::filesystem::current_path());
         write_file_bytes(output_path, vault_bytes);
         std::cout << input_path.string() << " -> " << output_path.string() << '\n';
         return 0;

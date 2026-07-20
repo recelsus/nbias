@@ -54,7 +54,13 @@ namespace
     void write_file_bytes(std::filesystem::path const& path, nbias::core::byte_buffer const& content)
     {
         std::ofstream stream(path, std::ios::binary | std::ios::trunc);
+        if(!stream) {
+            throw std::runtime_error("failed to open for writing: " + path.string());
+        }
         stream.write(reinterpret_cast<char const*>(content.data()), static_cast<std::streamsize>(content.size()));
+        if(!stream) {
+            throw std::runtime_error("failed to write: " + path.string());
+        }
     }
 
     // Priority: --editor > $VISUAL > $EDITOR > the first of fallback_editor_candidates

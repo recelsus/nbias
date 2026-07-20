@@ -54,10 +54,15 @@ namespace
     {
         std::cout << path.string() << " already exists with different content. Overwrite? [y/N] ";
         std::cout.flush();
-        std::string answer{};
-        std::getline(std::cin, answer);
-        return answer == "y" || answer == "Y";
+        return read_yes_no_answer();
     }
+}
+
+bool read_yes_no_answer()
+{
+    std::string answer{};
+    std::getline(std::cin, answer);
+    return answer == "y" || answer == "Y";
 }
 
 std::filesystem::path make_vault_output_path(

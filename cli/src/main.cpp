@@ -2,6 +2,7 @@
 #include "dec_command.hpp"
 #include "edit_command.hpp"
 #include "enc_command.hpp"
+#include "info_command.hpp"
 
 #include <exception>
 #include <iostream>
@@ -23,6 +24,9 @@ namespace
                 }
                 if constexpr(std::is_same_v<std::decay_t<decltype(options)>, edit_options>) {
                     return execute_edit(options);
+                }
+                if constexpr(std::is_same_v<std::decay_t<decltype(options)>, info_options>) {
+                    return execute_info(options);
                 }
             },
             command.payload);

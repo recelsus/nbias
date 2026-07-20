@@ -30,7 +30,13 @@ namespace
             std::filesystem::create_directories(dir);
         }
         std::ofstream stream(path, std::ios::binary | std::ios::trunc);
+        if(!stream) {
+            throw std::runtime_error("failed to open for writing: " + path.string());
+        }
         stream.write(reinterpret_cast<char const*>(content.data()), static_cast<std::streamsize>(content.size()));
+        if(!stream) {
+            throw std::runtime_error("failed to write: " + path.string());
+        }
     }
 
     nbias::core::decrypted_note decrypt_with_password(

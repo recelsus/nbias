@@ -22,6 +22,27 @@ namespace
         options.password_protected = true;
     }
 
+    void reject_conflicting_password_options(common_key_options const& options)
+    {
+        if(options.explicit_no_password && options.password_protected) {
+            throw_cli_error("conflicting options: --no-password cannot be combined with -K/--key");
+        }
+    }
+
+    nbias::core::kdf_profile parse_kdf_profile(std::string const& text)
+    {
+        if(text == "fast") {
+            return nbias::core::kdf_profile::fast;
+        }
+        if(text == "balanced") {
+            return nbias::core::kdf_profile::balanced;
+        }
+        if(text == "hardened") {
+            return nbias::core::kdf_profile::hardened;
+        }
+        throw_cli_error("invalid kdf profile: " + text);
+    }
+
     parsed_command parse_enc_or_dec_command(command_kind kind, std::vector<std::string> const& args)
     {
         enc_options enc{};
@@ -58,6 +79,14 @@ namespace
                 ++index;
                 continue;
             }
+            if(kind == command_kind::enc && token == "--kdf-profile") {
+                if(index + 1 >= args.size()) {
+                    throw_cli_error("--kdf-profile expects a value");
+                }
+                enc.profile = parse_kdf_profile(args[index + 1]);
+                ++index;
+                continue;
+            }
             if(is_option_token(token)) {
                 throw_cli_error("unknown option: " + token);
             }
@@ -67,6 +96,7 @@ namespace
         if(paths.empty()) {
             throw_cli_error((kind == command_kind::enc ? std::string{"enc"} : std::string{"dec"}) + " requires at least one path");
         }
+        reject_conflicting_password_options(common);
 
         parsed_command command{};
         command.kind = kind;
@@ -124,6 +154,33 @@ namespace
         command.payload = options;
         return command;
     }
+
+    parsed_command parse_info_command(std::vector<std::string> const& args)
+    {
+        info_options options{};
+        bool path_set{false};
+
+        for(std::size_t index = 2; index < args.size(); ++index) {
+            auto const& token = args[index];
+            if(is_option_token(token)) {
+                throw_cli_error("unknown option: " + token);
+            }
+            if(path_set) {
+                throw_cli_error("unexpected argument: " + token);
+            }
+            options.target_path = token;
+            path_set = true;
+        }
+
+        if(!path_set) {
+            throw_cli_error("info requires a target path");
+        }
+
+        parsed_command command{};
+        command.kind = command_kind::info;
+        command.payload = options;
+        return command;
+    }
 }
 
 parsed_command parse_command_line(int argc, char const* const* argv)
@@ -148,6 +205,9 @@ parsed_command parse_command_line(int argc, char const* const* argv)
     if(command == "edit") {
         return parse_edit_command(args);
     }
+    if(command == "info") {
+        return parse_info_command(args);
+    }
     if(command == "--help" || command == "-h" || command == "help") {
         throw_cli_error(build_usage_string());
     }
@@ -160,8 +220,9 @@ std::string build_usage_string()
     std::ostringstream out{};
     out << "Usage: nbias <command> [options]\n\n";
     out << "Commands:\n";
-    out << "  enc <path...> [--output-dir <dir>] [-K] [--key|-k <value>] [--no-password]\n";
+    out << "  enc <path...> [--output-dir <dir>] [-K] [--key|-k <value>] [--no-password] [--kdf-profile <fast|balanced|hardened>]\n";
     out << "  dec <path...> [--output-dir <dir>] [-K] [--key|-k <value>]\n";
     out << "  edit <path.knty> [--editor <cmd>] [-K] [--key|-k <value>] [--yes]\n";
+    out << "  info <path.knty>\n";
     return out.str();
 }

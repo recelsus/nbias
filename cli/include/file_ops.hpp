@@ -8,6 +8,9 @@
 
 inline constexpr std::string_view vault_extension{".knty"};
 
+// Reads a single line from stdin and reports whether it was "y"/"Y".
+bool read_yes_no_answer();
+
 // enc output path: --output-dir (flat) > .env OUTPUT (reproduces the input's subdirectory
 // structure relative to base_dir) > same directory as the input file.
 std::filesystem::path make_vault_output_path(
