@@ -1,0 +1,55 @@
+#pragma once
+
+#include <filesystem>
+#include <optional>
+#include <string>
+#include <variant>
+#include <vector>
+
+enum class command_kind
+{
+    enc,
+    dec,
+    edit,
+};
+
+struct common_key_options
+{
+    bool password_protected{false};
+    bool explicit_no_password{false};
+    std::optional<std::string> key{};
+};
+
+struct enc_options : common_key_options
+{
+    std::vector<std::filesystem::path> paths{};
+    std::optional<std::filesystem::path> output_dir{};
+};
+
+struct dec_options : common_key_options
+{
+    std::vector<std::filesystem::path> paths{};
+    std::optional<std::filesystem::path> output_dir{};
+};
+
+struct edit_options : common_key_options
+{
+    std::filesystem::path target_path{};
+    std::optional<std::string> editor{};
+    // Parsed per requirements.md section 3's command synopsis, but not yet wired to a
+    // confirmation prompt: the confirmed edit flow has none. Kept here so the flag is
+    // accepted (not rejected as unknown) until that open item is settled.
+    bool assume_yes{false};
+};
+
+using command_payload = std::variant<enc_options, dec_options, edit_options>;
+
+struct parsed_command
+{
+    command_kind kind{};
+    command_payload payload;
+};
+
+parsed_command parse_command_line(int argc, char const* const* argv);
+
+std::string build_usage_string();

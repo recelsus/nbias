@@ -8,27 +8,31 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(nbias_sources
-    src/main.cpp
-    src/cli.cpp
-    src/editor.cpp
-    src/util.cpp
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(sodium REQUIRED IMPORTED_TARGET libsodium)
+
+add_library(nbias_core STATIC
+    core/src/vault_codec.cpp
+    core/src/kdf_params.cpp
+    core/src/crypto_engine.cpp
 )
 
-if(APPLE)
-    enable_language(OBJCXX)
-    list(APPEND nbias_sources src/crypto_commoncrypto.mm)
-else()
-    list(APPEND nbias_sources src/crypto_openssl.cpp)
-endif()
+target_include_directories(nbias_core PUBLIC core/include)
+target_link_libraries(nbias_core PUBLIC PkgConfig::sodium)
 
-add_executable(nbias ${nbias_sources})
+add_executable(nbias
+    cli/src/main.cpp
+    cli/src/cli_options.cpp
+    cli/src/env_file.cpp
+    cli/src/passphrase_resolver.cpp
+    cli/src/file_ops.cpp
+    cli/src/enc_command.cpp
+    cli/src/dec_command.cpp
+    cli/src/edit_command.cpp
+)
 
-target_include_directories(nbias PRIVATE src)
-
-if(APPLE)
-    target_link_libraries(nbias PRIVATE "-framework Security" "-framework Foundation")
-endif()
+target_include_directories(nbias PRIVATE cli/include)
+target_link_libraries(nbias PRIVATE nbias_core)
 
 if(CMAKE_EXPORT_COMPILE_COMMANDS AND NOT TARGET link_compile_commands)
     set(link_compile_commands_script "${CMAKE_BINARY_DIR}/link_compile_commands.cmake")
