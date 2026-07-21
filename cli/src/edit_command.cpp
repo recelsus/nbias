@@ -164,6 +164,7 @@ int execute_edit(edit_options const& options)
     if(header.auth == nbias::core::auth_method::password) {
         passphrase = resolve_edit_passphrase(options);
     }
+    passphrase_scrubber scrubber{passphrase};
 
     auto note = nbias::core::decrypt_note(vault_bytes, as_view(passphrase));
 

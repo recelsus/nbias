@@ -44,6 +44,7 @@ namespace
         dec_options const& options)
     {
         auto candidate = resolve_passphrase_noninteractive(options.key);
+        passphrase_scrubber candidate_scrubber{candidate};
         if(candidate) {
             try {
                 return nbias::core::decrypt_note(vault_bytes, as_view(candidate));
@@ -55,6 +56,7 @@ namespace
 
         for(int attempt = 0; attempt < max_interactive_password_attempts; ++attempt) {
             auto passphrase = prompt_passphrase_interactively("password: ");
+            string_scrubber attempt_scrubber{passphrase};
             try {
                 return nbias::core::decrypt_note(vault_bytes, std::string_view{passphrase});
             }
@@ -93,7 +95,7 @@ namespace
         }
 
         auto output_dir = make_plain_output_dir(vault_path, options.output_dir, env.output_dir, env.input_dir, std::filesystem::current_path());
-        auto desired_path = output_dir / note.orig_name;
+        auto desired_path = output_dir / sanitize_orig_name(note.orig_name);
 
         auto write_path = choose_decrypt_write_path(desired_path, note.plaintext);
         write_file_bytes(write_path, note.plaintext);

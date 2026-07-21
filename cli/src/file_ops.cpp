@@ -118,3 +118,12 @@ std::filesystem::path choose_decrypt_write_path(
 
     return make_numbered_path(desired_path);
 }
+
+std::filesystem::path sanitize_orig_name(std::string const& orig_name)
+{
+    auto filename = std::filesystem::path{orig_name}.filename();
+    if(filename.empty() || filename == "." || filename == "..") {
+        throw std::runtime_error("vault header contains an unsafe original filename: " + orig_name);
+    }
+    return filename;
+}

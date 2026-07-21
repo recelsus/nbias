@@ -107,6 +107,51 @@ int main()
         NBIAS_CHECK(!std::filesystem::exists(result));
     });
 
+    run_case("sanitize_orig_name strips directory components from a plain relative path", [] {
+        NBIAS_CHECK(sanitize_orig_name("subdir/file.md") == std::filesystem::path{"file.md"});
+    });
+
+    run_case("sanitize_orig_name strips parent-directory traversal", [] {
+        NBIAS_CHECK(sanitize_orig_name("../../etc/passwd") == std::filesystem::path{"passwd"});
+    });
+
+    run_case("sanitize_orig_name strips a leading absolute path", [] {
+        NBIAS_CHECK(sanitize_orig_name("/etc/passwd") == std::filesystem::path{"passwd"});
+    });
+
+    run_case("sanitize_orig_name rejects a name that is only '..'", [] {
+        bool threw{false};
+        try {
+            sanitize_orig_name("..");
+        }
+        catch(std::runtime_error const&) {
+            threw = true;
+        }
+        NBIAS_CHECK(threw);
+    });
+
+    run_case("sanitize_orig_name rejects a name that is only '.'", [] {
+        bool threw{false};
+        try {
+            sanitize_orig_name(".");
+        }
+        catch(std::runtime_error const&) {
+            threw = true;
+        }
+        NBIAS_CHECK(threw);
+    });
+
+    run_case("sanitize_orig_name rejects an empty name", [] {
+        bool threw{false};
+        try {
+            sanitize_orig_name("");
+        }
+        catch(std::runtime_error const&) {
+            threw = true;
+        }
+        NBIAS_CHECK(threw);
+    });
+
     std::filesystem::remove_all(temp_dir);
     return nbias::test::report();
 }

@@ -81,6 +81,10 @@ namespace nbias::core::detail
         }
         header.profile = static_cast<kdf_profile>(profile_value);
 
+        if(vault_bytes[7] != 0) {
+            throw vault_format_error("unknown flag bits set in vault header");
+        }
+
         std::copy_n(vault_bytes.begin() + 8, salt_bytes, header.salt.begin());
         std::copy_n(vault_bytes.begin() + 24, nonce_bytes, header.nonce.begin());
 

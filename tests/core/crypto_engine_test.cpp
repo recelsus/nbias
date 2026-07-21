@@ -94,6 +94,41 @@ int main()
         NBIAS_CHECK(threw);
     });
 
+    run_case("tampering with the ciphertext body is detected via the AEAD tag", [] {
+        auto plaintext = to_bytes("tamper me not either");
+        auto vault = encrypt_note(plaintext, "a.md", auth_method::no_password, kdf_profile::fast, std::nullopt);
+
+        // Flip the last byte, inside the ciphertext/tag region rather than the header.
+        vault.back() ^= 0xFF;
+
+        bool threw{false};
+        try {
+            decrypt_note(vault, std::nullopt);
+        }
+        catch(vault_auth_error const&) {
+            threw = true;
+        }
+        NBIAS_CHECK(threw);
+    });
+
+    run_case("decrypt_note rejects a vault truncated shorter than the minimum AEAD tag size", [] {
+        auto plaintext = to_bytes("short");
+        auto vault = encrypt_note(plaintext, "a.md", auth_method::no_password, kdf_profile::fast, std::nullopt);
+        auto header = peek_header(vault);
+
+        // Keep the header intact but leave fewer than 16 (ABYTES) ciphertext/tag bytes.
+        vault.resize(header.header_size + 4);
+
+        bool threw{false};
+        try {
+            decrypt_note(vault, std::nullopt);
+        }
+        catch(vault_format_error const&) {
+            threw = true;
+        }
+        NBIAS_CHECK(threw);
+    });
+
     run_case("has_vault_header rejects non-vault bytes", [] {
         auto not_a_vault = to_bytes("just some plain text file, not a vault at all");
         NBIAS_CHECK(!has_vault_header(not_a_vault));

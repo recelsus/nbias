@@ -129,10 +129,14 @@ namespace nbias::core
         ensure_sodium_ready();
 
         auto header = detail::parse_header(vault_bytes);
-        auto key = resolve_key(header.auth, header.profile, header.salt, passphrase);
 
-        auto const* ciphertext = vault_bytes.data() + header.header_size;
         auto ciphertext_len = vault_bytes.size() - header.header_size;
+        if(ciphertext_len < crypto_aead_xchacha20poly1305_ietf_ABYTES) {
+            throw vault_format_error("ciphertext shorter than the minimum AEAD tag size");
+        }
+
+        auto key = resolve_key(header.auth, header.profile, header.salt, passphrase);
+        auto const* ciphertext = vault_bytes.data() + header.header_size;
 
         byte_buffer plaintext(ciphertext_len);
         unsigned long long plaintext_len{};

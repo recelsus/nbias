@@ -97,6 +97,20 @@ int main()
         NBIAS_CHECK(threw);
     });
 
+    run_case("parse_header rejects a non-zero reserved flags byte", [] {
+        auto header_bytes = detail::serialize_header(auth_method::no_password, kdf_profile::fast, make_salt(), make_nonce(), "a.md");
+        header_bytes[7] = 0x01;
+
+        bool threw{false};
+        try {
+            detail::parse_header(header_bytes);
+        }
+        catch(vault_format_error const&) {
+            threw = true;
+        }
+        NBIAS_CHECK(threw);
+    });
+
     run_case("parse_header rejects an orig_name_len longer than the remaining buffer", [] {
         auto header_bytes = detail::serialize_header(auth_method::no_password, kdf_profile::fast, make_salt(), make_nonce(), "a.md");
         header_bytes.resize(detail::fixed_header_size);

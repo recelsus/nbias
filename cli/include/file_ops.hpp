@@ -35,3 +35,10 @@ std::filesystem::path make_plain_output_dir(
 std::filesystem::path choose_decrypt_write_path(
     std::filesystem::path const& desired_path,
     std::vector<unsigned char> const& new_content);
+
+// Reduces a vault header's orig_name to a single path component safe to join under an output
+// directory. A vault's header is AEAD-authenticated, but that only proves it matches what its
+// author wrote into it — a maliciously crafted vault can still carry a traversal-style
+// orig_name (e.g. "../../.bashrc", "/etc/passwd"), so this must be applied before writing.
+// Throws std::runtime_error if nothing safe remains after stripping directory components.
+std::filesystem::path sanitize_orig_name(std::string const& orig_name);

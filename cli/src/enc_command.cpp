@@ -111,6 +111,7 @@ namespace
 int execute_enc(enc_options const& options)
 {
     auto passphrase = resolve_enc_passphrase(options);
+    passphrase_scrubber scrubber{passphrase};
     auto env = load_env_file(std::filesystem::current_path());
 
     int exit_code{0};

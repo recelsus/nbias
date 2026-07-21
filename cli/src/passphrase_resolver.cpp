@@ -2,6 +2,8 @@
 
 #include "env_file.hpp"
 
+#include <sodium.h>
+
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
@@ -79,4 +81,11 @@ std::optional<std::string_view> as_view(std::optional<std::string> const& value)
         return std::string_view{*value};
     }
     return std::nullopt;
+}
+
+void secure_zero(std::string& value)
+{
+    if(!value.empty()) {
+        sodium_memzero(value.data(), value.size());
+    }
 }
