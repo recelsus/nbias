@@ -113,3 +113,12 @@ NBIAS_KEY=love_kenty
 !*.md.knty
 .env
 ```
+
+## License
+
+nbias is licensed under the MIT License. See `LICENSE`.
+
+## Third-Party Notices
+
+Third-party dependency and tooling notices are listed in
+`THIRD_PARTY_NOTICES.md`.
