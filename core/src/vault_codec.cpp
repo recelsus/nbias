@@ -27,7 +27,7 @@ namespace nbias::core::detail
         {
             return value <= static_cast<std::uint8_t>(kdf_profile::hardened);
         }
-    }
+    }  // namespace
 
     byte_buffer serialize_header(
         auth_method auth,
@@ -100,4 +100,4 @@ namespace nbias::core::detail
 
         return header;
     }
-}
+}  // namespace nbias::core::detail

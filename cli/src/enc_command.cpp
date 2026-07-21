@@ -106,7 +106,7 @@ namespace
         std::cout << input_path.string() << " -> " << output_path.string() << '\n';
         return 0;
     }
-}
+}  // namespace
 
 int execute_enc(enc_options const& options)
 {

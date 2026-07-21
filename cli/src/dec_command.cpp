@@ -50,7 +50,6 @@ namespace
                 return nbias::core::decrypt_note(vault_bytes, as_view(candidate));
             }
             catch(nbias::core::vault_auth_error const&) {
-                // fall through to interactive retries below
             }
         }
 
@@ -102,7 +101,7 @@ namespace
         std::cout << vault_path.string() << " -> " << write_path.string() << '\n';
         return 0;
     }
-}
+}  // namespace
 
 int execute_dec(dec_options const& options)
 {

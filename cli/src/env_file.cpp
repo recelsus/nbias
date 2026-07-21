@@ -30,7 +30,7 @@ namespace
     {
         return !line.empty() && line.front() != '#';
     }
-}
+}  // namespace
 
 env_file load_env_file(std::filesystem::path const& directory)
 {

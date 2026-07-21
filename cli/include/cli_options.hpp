@@ -40,9 +40,6 @@ struct edit_options : common_key_options
 {
     std::filesystem::path target_path{};
     std::optional<std::string> editor{};
-    // Parsed per requirements.md section 3's command synopsis, but not yet wired to a
-    // confirmation prompt: the confirmed edit flow has none. Kept here so the flag is
-    // accepted (not rejected as unknown) until that open item is settled.
     bool assume_yes{false};
 };
 

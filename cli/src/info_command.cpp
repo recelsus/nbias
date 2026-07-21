@@ -47,7 +47,7 @@ namespace
         }
         return "unknown";
     }
-}
+}  // namespace
 
 int execute_info(info_options const& options)
 {

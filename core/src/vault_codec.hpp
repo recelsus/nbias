@@ -16,4 +16,4 @@ namespace nbias::core::detail
         std::string const& orig_name);
 
     vault_header parse_header(byte_buffer const& vault_bytes);
-}
+}  // namespace nbias::core::detail

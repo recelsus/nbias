@@ -31,7 +31,7 @@ namespace
             },
             command.payload);
     }
-}
+}  // namespace
 
 int main(int argc, char* argv[])
 {

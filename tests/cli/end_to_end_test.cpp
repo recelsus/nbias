@@ -42,12 +42,10 @@ namespace
         write_file(path, body);
         std::filesystem::permissions(path, std::filesystem::perms::owner_all);
     }
-}
+}  // namespace
 
 int main()
 {
-    // A real $VISUAL/$EDITOR inherited from the developer's shell would otherwise take
-    // priority over the fake per-command EDITOR below and launch a real, blocking editor.
     ::unsetenv("VISUAL");
     ::unsetenv("EDITOR");
 

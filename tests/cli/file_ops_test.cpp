@@ -39,7 +39,7 @@ namespace
             throw std::runtime_error("failed to redirect stdin for the test");
         }
     }
-}
+}  // namespace
 
 int main()
 {

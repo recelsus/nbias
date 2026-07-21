@@ -10,8 +10,41 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(CTest)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(sodium REQUIRED IMPORTED_TARGET libsodium)
+option(NBIAS_BUILD_WASM "Build the wasm/ Emscripten bindings for nbias_core (requires configuring with emcmake)" OFF)
+
+if(EMSCRIPTEN)
+    include(FetchContent)
+    FetchContent_Declare(libsodium_src
+        GIT_REPOSITORY https://github.com/jedisct1/libsodium.git
+        GIT_TAG 1.0.20-RELEASE
+    )
+    FetchContent_MakeAvailable(libsodium_src)
+
+    set(sodium_wasm_prefix "${libsodium_src_SOURCE_DIR}/libsodium-js-sumo")
+    set(sodium_wasm_lib "${sodium_wasm_prefix}/lib/libsodium.a")
+
+    add_custom_command(
+        OUTPUT "${sodium_wasm_lib}"
+        COMMAND ./dist-build/emscripten.sh --sumo
+        WORKING_DIRECTORY "${libsodium_src_SOURCE_DIR}"
+        COMMENT "Building libsodium for wasm32 (dist-build/emscripten.sh --sumo)"
+        VERBATIM
+    )
+    add_custom_target(libsodium_wasm_build DEPENDS "${sodium_wasm_lib}")
+
+    file(MAKE_DIRECTORY "${sodium_wasm_prefix}/include")
+
+    add_library(sodium_for_wasm STATIC IMPORTED GLOBAL)
+    set_target_properties(sodium_for_wasm PROPERTIES IMPORTED_LOCATION "${sodium_wasm_lib}")
+    add_dependencies(sodium_for_wasm libsodium_wasm_build)
+    target_include_directories(sodium_for_wasm INTERFACE "${sodium_wasm_prefix}/include")
+
+    set(nbias_sodium_target sodium_for_wasm)
+else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(sodium REQUIRED IMPORTED_TARGET libsodium)
+    set(nbias_sodium_target PkgConfig::sodium)
+endif()
 
 add_library(nbias_core STATIC
     core/src/vault_codec.cpp
@@ -20,29 +53,61 @@ add_library(nbias_core STATIC
 )
 
 target_include_directories(nbias_core PUBLIC core/include)
-target_link_libraries(nbias_core PUBLIC PkgConfig::sodium)
+target_link_libraries(nbias_core PUBLIC ${nbias_sodium_target})
 
-add_library(nbias_cli_support STATIC
-    cli/src/cli_options.cpp
-    cli/src/env_file.cpp
-    cli/src/passphrase_resolver.cpp
-    cli/src/file_ops.cpp
-)
+if(EMSCRIPTEN)
+    target_compile_options(nbias_core PUBLIC -fwasm-exceptions)
+endif()
 
-target_include_directories(nbias_cli_support PUBLIC cli/include)
-target_link_libraries(nbias_cli_support PUBLIC nbias_core)
+if(NBIAS_BUILD_WASM)
+    if(NOT EMSCRIPTEN)
+        message(FATAL_ERROR "NBIAS_BUILD_WASM requires configuring with 'emcmake cmake' (the Emscripten toolchain).")
+    endif()
 
-add_executable(nbias
-    cli/src/main.cpp
-    cli/src/enc_command.cpp
-    cli/src/dec_command.cpp
-    cli/src/edit_command.cpp
-    cli/src/info_command.cpp
-)
+    add_executable(nbias_wasm wasm/src/bindings.cpp)
+    target_link_libraries(nbias_wasm PRIVATE nbias_core)
+    set_target_properties(nbias_wasm PROPERTIES OUTPUT_NAME "nbias_core" SUFFIX ".mjs")
+    target_link_options(nbias_wasm PRIVATE
+        "-fwasm-exceptions"
+        "-sMODULARIZE=1"
+        "-sEXPORT_ES6=1"
+        "-sEXPORT_NAME=createNbiasCoreModule"
+        "-sALLOW_MEMORY_GROWTH=1"
+        "-sEXPORTED_FUNCTIONS=[\"_malloc\",\"_free\"]"
+        "-sEXPORTED_RUNTIME_METHODS=[\"getValue\",\"setValue\",\"UTF8ToString\",\"stringToUTF8\",\"lengthBytesUTF8\",\"HEAPU8\"]"
+    )
 
-target_link_libraries(nbias PRIVATE nbias_cli_support)
+    if(BUILD_TESTING)
+        add_test(
+            NAME wasm_smoke
+            COMMAND node "${CMAKE_CURRENT_SOURCE_DIR}/wasm/test/smoke_test.mjs" "$<TARGET_FILE_DIR:nbias_wasm>/nbias_core.mjs"
+        )
+    endif()
+endif()
 
-if(CMAKE_EXPORT_COMPILE_COMMANDS AND NOT TARGET link_compile_commands)
+if(NOT EMSCRIPTEN)
+    add_library(nbias_cli_support STATIC
+        cli/src/cli_options.cpp
+        cli/src/env_file.cpp
+        cli/src/passphrase_resolver.cpp
+        cli/src/file_ops.cpp
+    )
+
+    target_include_directories(nbias_cli_support PUBLIC cli/include)
+    target_link_libraries(nbias_cli_support PUBLIC nbias_core)
+
+    add_executable(nbias
+        cli/src/main.cpp
+        cli/src/enc_command.cpp
+        cli/src/dec_command.cpp
+        cli/src/edit_command.cpp
+        cli/src/info_command.cpp
+    )
+
+    target_link_libraries(nbias PRIVATE nbias_cli_support)
+endif()
+
+if(CMAKE_EXPORT_COMPILE_COMMANDS AND NOT EMSCRIPTEN AND NOT TARGET link_compile_commands)
     set(link_compile_commands_script "${CMAKE_BINARY_DIR}/link_compile_commands.cmake")
     file(WRITE ${link_compile_commands_script}
         "if(EXISTS \"${CMAKE_BINARY_DIR}/compile_commands.json\")\n"
@@ -61,7 +126,7 @@ if(CMAKE_EXPORT_COMPILE_COMMANDS AND NOT TARGET link_compile_commands)
     )
 endif()
 
-if(BUILD_TESTING)
+if(BUILD_TESTING AND NOT EMSCRIPTEN)
     add_executable(core_vault_codec_test tests/core/vault_codec_test.cpp)
     target_include_directories(core_vault_codec_test PRIVATE core/src tests/support)
     target_link_libraries(core_vault_codec_test PRIVATE nbias_core)

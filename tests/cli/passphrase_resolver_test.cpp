@@ -44,7 +44,7 @@ namespace
     private:
         std::filesystem::path original_;
     };
-}
+}  // namespace
 
 int main()
 {

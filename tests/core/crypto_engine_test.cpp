@@ -11,7 +11,7 @@ namespace
     {
         return byte_buffer(text.begin(), text.end());
     }
-}
+}  // namespace
 
 int main()
 {
@@ -81,7 +81,6 @@ int main()
         auto plaintext = to_bytes("tamper me not");
         auto vault = encrypt_note(plaintext, "a.md", auth_method::no_password, kdf_profile::fast, std::nullopt);
 
-        // Flip a byte inside orig_name, which is part of the AAD-covered header.
         vault[50] ^= 0xFF;
 
         bool threw{false};
@@ -98,7 +97,6 @@ int main()
         auto plaintext = to_bytes("tamper me not either");
         auto vault = encrypt_note(plaintext, "a.md", auth_method::no_password, kdf_profile::fast, std::nullopt);
 
-        // Flip the last byte, inside the ciphertext/tag region rather than the header.
         vault.back() ^= 0xFF;
 
         bool threw{false};
@@ -116,7 +114,6 @@ int main()
         auto vault = encrypt_note(plaintext, "a.md", auth_method::no_password, kdf_profile::fast, std::nullopt);
         auto header = peek_header(vault);
 
-        // Keep the header intact but leave fewer than 16 (ABYTES) ciphertext/tag bytes.
         vault.resize(header.header_size + 4);
 
         bool threw{false};

@@ -77,4 +77,4 @@ namespace nbias::core
     decrypted_note decrypt_note(
         byte_buffer const& vault_bytes,
         std::optional<std::string_view> passphrase);
-}
+}  // namespace nbias::core

@@ -37,7 +37,7 @@ namespace nbias::test
     {
         return failure_count == 0 ? 0 : 1;
     }
-}
+}  // namespace nbias::test
 
 #define NBIAS_CHECK(expr) \
     do { \

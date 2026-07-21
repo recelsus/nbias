@@ -24,7 +24,7 @@ namespace
         }
         return nonce;
     }
-}
+}  // namespace
 
 int main()
 {

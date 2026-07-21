@@ -59,7 +59,7 @@ namespace
         termios original_{};
         bool active_{false};
     };
-}
+}  // namespace
 
 std::string prompt_passphrase_interactively(std::string const& prompt_text)
 {

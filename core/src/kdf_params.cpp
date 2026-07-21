@@ -8,9 +8,6 @@ namespace nbias::core::detail
 {
     namespace
     {
-        // Provisional (reference/requirements.md section 9 leaves the exact numbers open):
-        // each profile currently mirrors libsodium's matching named crypto_pwhash preset.
-        // Edit a profile's pair below to tune it independently of the others.
         constexpr unsigned long long fast_opslimit{crypto_pwhash_OPSLIMIT_INTERACTIVE};
         constexpr std::size_t fast_memlimit{crypto_pwhash_MEMLIMIT_INTERACTIVE};
 
@@ -19,7 +16,7 @@ namespace nbias::core::detail
 
         constexpr unsigned long long hardened_opslimit{crypto_pwhash_OPSLIMIT_SENSITIVE};
         constexpr std::size_t hardened_memlimit{crypto_pwhash_MEMLIMIT_SENSITIVE};
-    }
+    }  // namespace
 
     kdf_limits select_kdf_limits(kdf_profile profile)
     {
@@ -33,4 +30,4 @@ namespace nbias::core::detail
         }
         throw std::logic_error("invalid kdf_profile");
     }
-}
+}  // namespace nbias::core::detail

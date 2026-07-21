@@ -181,7 +181,7 @@ namespace
         command.payload = options;
         return command;
     }
-}
+}  // namespace
 
 parsed_command parse_command_line(int argc, char const* const* argv)
 {

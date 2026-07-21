@@ -63,8 +63,6 @@ namespace
         }
     }
 
-    // Priority: --editor > $VISUAL > $EDITOR > the first of fallback_editor_candidates
-    // found on $PATH (GUI editors are typically set via $VISUAL, terminal ones via $EDITOR).
     std::string choose_editor_command(edit_options const& options)
     {
         if(options.editor) {
@@ -89,9 +87,6 @@ namespace
         return path.extension().string() == vault_extension;
     }
 
-    // POSIX-only temporary plaintext file (mkstemp), removed on destruction even if editing
-    // fails partway through. Windows temp-file handling is a known open item (requirements.md
-    // section 3/10).
     class scoped_temp_file
     {
     public:
@@ -141,7 +136,7 @@ namespace
         }
         return prompt_passphrase_interactively("password: ");
     }
-}
+}  // namespace
 
 int execute_edit(edit_options const& options)
 {

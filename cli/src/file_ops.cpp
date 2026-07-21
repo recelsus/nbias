@@ -56,7 +56,7 @@ namespace
         std::cout.flush();
         return read_yes_no_answer();
     }
-}
+}  // namespace
 
 bool read_yes_no_answer()
 {

@@ -23,10 +23,6 @@ namespace nbias::core
             });
         }
 
-        // Not a secret: this is the fixed key for auth_method::no_password.
-        // Anyone with the nbias binary (or this source) can derive it; the
-        // no-password mode is a viewing deterrent, not access control (see
-        // requirements.md section 7/9).
         std::array<std::uint8_t, key_bytes> const& embedded_key()
         {
             static constexpr std::array<std::uint8_t, key_bytes> key{
@@ -75,7 +71,7 @@ namespace nbias::core
             }
             return derive_key_from_passphrase(*passphrase, salt, profile);
         }
-    }
+    }  // namespace
 
     bool has_vault_header(byte_buffer const& bytes)
     {
@@ -153,4 +149,4 @@ namespace nbias::core
 
         return decrypted_note{std::move(plaintext), header.orig_name, header.auth};
     }
-}
+}  // namespace nbias::core

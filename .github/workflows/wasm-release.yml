@@ -1,0 +1,90 @@
+name: wasm release
+
+# Builds nbias_core for wasm32 and attaches the compiled nbias_core.wasm/nbias_core.mjs to a
+# GitHub Release as a zip, so downstream consumers (e.g. a Chrome extension project) can just
+# download the built artifact instead of cloning this repo and running emsdk themselves.
+# See wasm/README.md for the binding API and reference/checklist.md / memory
+# "nbias_wasm_architecture" for the background on this split.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to attach the wasm build to (defaults to the pushed tag)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve release tag
+        id: release
+        run: |
+          tag="${{ inputs.tag }}"
+          if [ -z "$tag" ]; then
+            tag="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Install system build dependencies
+        run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Emscripten SDK
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$HOME/emsdk"
+          cd "$HOME/emsdk"
+          ./emsdk install latest
+          ./emsdk activate latest
+          echo "$HOME/emsdk" >> "$GITHUB_PATH"
+          echo "$HOME/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
+
+      # libsodium's wasm32 build (via dist-build/emscripten.sh --sumo) takes a few minutes;
+      # cache it keyed on the pinned libsodium tag in CMakeLists.txt so it only rebuilds when
+      # that pin actually changes.
+      - name: Cache libsodium wasm build
+        uses: actions/cache@v4
+        with:
+          path: build-wasm/_deps/libsodium_src-src
+          key: libsodium-wasm-${{ runner.os }}-1.0.20-RELEASE
+
+      - name: Configure
+        run: emcmake cmake -S . -B build-wasm -DNBIAS_BUILD_WASM=ON
+
+      - name: Build
+        run: cmake --build build-wasm --target nbias_wasm -j"$(nproc)"
+
+      - name: Test
+        run: ctest --test-dir build-wasm --output-on-failure
+
+      - name: Package
+        run: |
+          staging="dist/nbias-core-wasm"
+          mkdir -p "$staging"
+          cp build-wasm/nbias_core.wasm "$staging/"
+          cp build-wasm/nbias_core.mjs "$staging/"
+          cp wasm/README.md "$staging/"
+          (cd dist && zip -r nbias-core-wasm.zip nbias-core-wasm)
+
+      - name: Upload release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.release.outputs.tag }}"
+          gh release view "$tag" --repo "${{ github.repository }}" >/dev/null 2>&1 \
+            || gh release create "$tag" --repo "${{ github.repository }}" --title "$tag" --generate-notes
+          gh release upload "$tag" dist/nbias-core-wasm.zip --repo "${{ github.repository }}" --clobber

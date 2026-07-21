@@ -23,7 +23,7 @@ namespace
         std::ofstream stream(dir / ".env", std::ios::binary);
         stream << content;
     }
-}
+}  // namespace
 
 int main()
 {

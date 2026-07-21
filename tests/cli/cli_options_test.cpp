@@ -32,7 +32,7 @@ namespace
         }
         return false;
     }
-}
+}  // namespace
 
 int main()
 {
